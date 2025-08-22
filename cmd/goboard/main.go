@@ -33,6 +33,9 @@ func main() {
 
 	log.Println("Database connection successful.")
 
+	// Create a Queries object from the connection pool
+	queries := db.New(dbpool)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok") //response for healthz endpoint
