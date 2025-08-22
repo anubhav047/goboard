@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/anubhav047/goboard/internal/db"
+	userservice "github.com/anubhav047/goboard/internal/services/user"
 	"github.com/joho/godotenv"
 )
 
@@ -35,6 +36,9 @@ func main() {
 
 	// Create a Queries object from the connection pool
 	queries := db.New(dbpool)
+
+	// Create the user Service
+	userService := userservice.New(queries)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
