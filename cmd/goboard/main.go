@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/anubhav047/goboard/internal/db"
+	httphandlers "github.com/anubhav047/goboard/internal/http"
 	userservice "github.com/anubhav047/goboard/internal/services/user"
 	"github.com/joho/godotenv"
 )
@@ -40,7 +41,11 @@ func main() {
 	// Create the user Service
 	userService := userservice.New(queries)
 
+	// Create and register User Handler
+	userHandler := httphandlers.NewUserHandler(userService)
+
 	mux := http.NewServeMux()
+	userHandler.RegisterRoutes(mux)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok") //response for healthz endpoint
 	})
