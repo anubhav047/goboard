@@ -1,14 +1,19 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/alexedwards/scs/postgresstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/anubhav047/goboard/internal/db"
 	httphandlers "github.com/anubhav047/goboard/internal/http"
 	userservice "github.com/anubhav047/goboard/internal/services/user"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
 
@@ -25,6 +30,18 @@ func main() {
 		log.Fatal("DATABASE_URL environment variable is not set")
 	}
 
+	// CREATE STANDARD DB POOL FOR SCS
+	// We need this because postgresstore expects a *sql.DB object.
+	dbConn, err := sql.Open("pgx", connStr)
+	if err != nil {
+		log.Fatalf("Unable to create standard db connection pool: %v\n", err)
+	}
+	defer dbConn.Close()
+	// Ping to confirm the connection is alive.
+	if err := dbConn.Ping(); err != nil {
+		log.Fatalf("Unable to ping database: %v\n", err)
+	}
+
 	//Connect to the database
 	dbpool, err := db.Connect(connStr)
 	if err != nil {
@@ -35,6 +52,14 @@ func main() {
 
 	log.Println("Database connection successful.")
 
+	// SESSION MANAGER
+	sessionManager := scs.New()
+	sessionManager.Store = postgresstore.New(dbConn)
+	sessionManager.Lifetime = 24 * time.Hour
+	sessionManager.Cookie.Persist = true
+	sessionManager.Cookie.Secure = false
+	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
+
 	// Create a Queries object from the connection pool
 	queries := db.New(dbpool)
 
@@ -42,7 +67,7 @@ func main() {
 	userService := userservice.New(queries)
 
 	// Create and register User Handler
-	userHandler := httphandlers.NewUserHandler(userService)
+	userHandler := httphandlers.NewUserHandler(userService, sessionManager)
 
 	mux := http.NewServeMux()
 	userHandler.RegisterRoutes(mux)
