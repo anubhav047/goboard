@@ -35,7 +35,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "ok")
+		fmt.Fprintln(w, "ok") //response for healthz endpoint
 	})
 
 	log.Println("Server running on :8080")
