@@ -98,8 +98,8 @@ func main() {
 	boardHandler.RegisterRoutes(mux, mw)
 	listHandler.RegisterRoutes(mux, mw)
 	cardHandler.RegisterRoutes(mux, mw)
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "ok") //response for healthz endpoint
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "ok")
 	})
 
 	log.Println("Server running on :8080")

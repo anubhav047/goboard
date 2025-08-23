@@ -27,12 +27,9 @@ func NewUserHandler(service *user.Service, sm *scs.SessionManager) *UserHandler 
 
 // RegisterRoutes adds the user routes to router.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, mw *Middleware) {
-	// Public routes
-	mux.HandleFunc("POST /register", h.handleRegister)
-	mux.HandleFunc("POST /login", h.handleLogin)
-
-	// Protected routes
-	mux.Handle("GET /me", mw.RequireAuth(http.HandlerFunc(h.handleMe)))
+	mux.HandleFunc("POST /api/register", h.handleRegister)
+	mux.HandleFunc("POST /api/login", h.handleLogin)
+	mux.Handle("GET /api/me", mw.RequireAuth(http.HandlerFunc(h.handleMe)))
 }
 
 type RegisterRequest struct {
