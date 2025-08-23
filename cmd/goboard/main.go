@@ -12,6 +12,9 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/anubhav047/goboard/internal/db"
 	httphandlers "github.com/anubhav047/goboard/internal/http"
+	boardservice "github.com/anubhav047/goboard/internal/services/board"
+	cardservice "github.com/anubhav047/goboard/internal/services/card"
+	listservice "github.com/anubhav047/goboard/internal/services/list"
 	userservice "github.com/anubhav047/goboard/internal/services/user"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
@@ -66,14 +69,35 @@ func main() {
 	// Create the user Service
 	userService := userservice.New(queries)
 
+	// Create the board Service
+	boardService := boardservice.New(queries)
+
+	// Create the list Service
+	listService := listservice.New(queries)
+
+	// Create the card Service
+	cardService := cardservice.New(queries)
+
 	// Create middleware struct
 	mw := httphandlers.NewMiddleware(sessionManager, queries)
 
 	// Create and register User Handler
 	userHandler := httphandlers.NewUserHandler(userService, sessionManager)
 
+	// Create and register Board Handler
+	boardHandler := httphandlers.NewBoardHandler(boardService)
+
+	// Create and register List Handler
+	listHandler := httphandlers.NewListHandler(listService)
+
+	// Create and register Card Handler
+	cardHandler := httphandlers.NewCardHandler(cardService)
+
 	mux := http.NewServeMux()
 	userHandler.RegisterRoutes(mux, mw)
+	boardHandler.RegisterRoutes(mux, mw)
+	listHandler.RegisterRoutes(mux, mw)
+	cardHandler.RegisterRoutes(mux, mw)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok") //response for healthz endpoint
 	})
