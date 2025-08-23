@@ -31,14 +31,14 @@ func NewMiddleware(sm *scs.SessionManager, queries *db.Queries) *Middleware {
 func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if user is authenticated
-		userID := m.sm.GetInt(r.Context(), "authenticatedUserID")
+		userID := m.sm.GetInt32(r.Context(), "authenticatedUserID")
 		if userID == 0 {
 			WriteError(w, http.StatusUnauthorized, "You must be logged in to access this resourse")
 			return
 		}
 
 		// Fetch the user from the database
-		user, err := m.queries.GetUserByID(r.Context(), int32(userID))
+		user, err := m.queries.GetUserByID(r.Context(), userID)
 		if err != nil {
 			// This could happen if the user was deleted after the session was created.
 			WriteError(w, http.StatusUnauthorized, "Invalid authentication token")

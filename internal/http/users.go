@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
@@ -26,9 +27,12 @@ func NewUserHandler(service *user.Service, sm *scs.SessionManager) *UserHandler 
 
 // RegisterRoutes adds the user routes to router.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, mw *Middleware) {
+	// Public routes
 	mux.HandleFunc("POST /register", h.handleRegister)
-	mux.Handle("POST /login", h.sm.LoadAndSave(http.HandlerFunc(h.handleLogin)))
-	mux.Handle("GET /me", h.sm.LoadAndSave(mw.RequireAuth(http.HandlerFunc(h.handleMe))))
+	mux.HandleFunc("POST /login", h.handleLogin)
+
+	// Protected routes
+	mux.Handle("GET /me", mw.RequireAuth(http.HandlerFunc(h.handleMe)))
 }
 
 type RegisterRequest struct {
@@ -96,6 +100,8 @@ func (h *UserHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.sm.Put(r.Context(), "authenticatedUserID", userr.ID)
+
+	log.Printf("Login successful. User ID %d put into session.", userr.ID)
 
 	response := map[string]interface{}{
 		"id":    userr.ID,
