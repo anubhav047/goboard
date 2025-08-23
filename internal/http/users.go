@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/anubhav047/goboard/internal/db"
 	"github.com/anubhav047/goboard/internal/services/user"
 )
 
@@ -24,9 +25,10 @@ func NewUserHandler(service *user.Service, sm *scs.SessionManager) *UserHandler 
 }
 
 // RegisterRoutes adds the user routes to router.
-func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, mw *Middleware) {
 	mux.HandleFunc("POST /register", h.handleRegister)
 	mux.Handle("POST /login", h.sm.LoadAndSave(http.HandlerFunc(h.handleLogin)))
+	mux.Handle("GET /me", h.sm.LoadAndSave(mw.RequireAuth(http.HandlerFunc(h.handleMe))))
 }
 
 type RegisterRequest struct {
@@ -99,6 +101,24 @@ func (h *UserHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		"id":    userr.ID,
 		"name":  userr.Name,
 		"email": userr.Email,
+	}
+	WriteJSON(w, http.StatusOK, response)
+}
+
+func (h *UserHandler) handleMe(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the user from the context.
+	user, ok := r.Context().Value(userContextKey).(db.User)
+	if !ok {
+		WriteError(w, http.StatusInternalServerError, "Error retrieving user from context")
+		return
+	}
+
+	// Send the user's details back as a response
+	response := map[string]interface{}{
+		"id":         user.ID,
+		"name":       user.Name,
+		"email":      user.Email,
+		"created_at": user.CreatedAt,
 	}
 	WriteJSON(w, http.StatusOK, response)
 }

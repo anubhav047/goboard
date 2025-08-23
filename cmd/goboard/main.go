@@ -66,11 +66,14 @@ func main() {
 	// Create the user Service
 	userService := userservice.New(queries)
 
+	// Create middleware struct
+	mw := httphandlers.NewMiddleware(sessionManager, queries)
+
 	// Create and register User Handler
 	userHandler := httphandlers.NewUserHandler(userService, sessionManager)
 
 	mux := http.NewServeMux()
-	userHandler.RegisterRoutes(mux)
+	userHandler.RegisterRoutes(mux, mw)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok") //response for healthz endpoint
 	})
