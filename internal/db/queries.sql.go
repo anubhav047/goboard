@@ -7,7 +7,122 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createBoard = `-- name: CreateBoard :one
+
+INSERT INTO boards (
+  name,
+  description,
+  created_by
+) VALUES (
+  $1, $2, $3
+)
+RETURNING id, name, description, created_by, created_at, updated_at
+`
+
+type CreateBoardParams struct {
+	Name        string
+	Description pgtype.Text
+	CreatedBy   int32
+}
+
+// ================================
+// BOARD QUERIES
+// ================================
+func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error) {
+	row := q.db.QueryRow(ctx, createBoard, arg.Name, arg.Description, arg.CreatedBy)
+	var i Board
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createCard = `-- name: CreateCard :one
+
+INSERT INTO cards (
+  title,
+  description,
+  list_id,
+  position
+) VALUES (
+  $1, $2, $3, $4
+)
+RETURNING id, title, description, list_id, position, created_at, updated_at
+`
+
+type CreateCardParams struct {
+	Title       string
+	Description pgtype.Text
+	ListID      int32
+	Position    int32
+}
+
+// ================================
+// CARD QUERIES
+// ================================
+func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, error) {
+	row := q.db.QueryRow(ctx, createCard,
+		arg.Title,
+		arg.Description,
+		arg.ListID,
+		arg.Position,
+	)
+	var i Card
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.ListID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createList = `-- name: CreateList :one
+
+INSERT INTO lists (
+  name,
+  board_id,
+  position
+) VALUES (
+  $1, $2, $3
+)
+RETURNING id, name, board_id, position, created_at, updated_at
+`
+
+type CreateListParams struct {
+	Name     string
+	BoardID  int32
+	Position int32
+}
+
+// ================================
+// LIST QUERIES
+// ================================
+func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) (List, error) {
+	row := q.db.QueryRow(ctx, createList, arg.Name, arg.BoardID, arg.Position)
+	var i List
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.BoardID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
@@ -37,6 +152,194 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const deleteBoard = `-- name: DeleteBoard :exec
+DELETE FROM boards
+WHERE id = $1
+`
+
+func (q *Queries) DeleteBoard(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteBoard, id)
+	return err
+}
+
+const deleteCard = `-- name: DeleteCard :exec
+DELETE FROM cards
+WHERE id = $1
+`
+
+func (q *Queries) DeleteCard(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteCard, id)
+	return err
+}
+
+const deleteList = `-- name: DeleteList :exec
+DELETE FROM lists
+where id = $1
+`
+
+func (q *Queries) DeleteList(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteList, id)
+	return err
+}
+
+const getBoardByID = `-- name: GetBoardByID :one
+SELECT id, name, description, created_by, created_at, updated_at FROM boards
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetBoardByID(ctx context.Context, id int32) (Board, error) {
+	row := q.db.QueryRow(ctx, getBoardByID, id)
+	var i Board
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getBoardsByUser = `-- name: GetBoardsByUser :many
+SELECT id, name, description, created_by, created_at, updated_at FROM boards
+WHERE created_by = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetBoardsByUser(ctx context.Context, createdBy int32) ([]Board, error) {
+	rows, err := q.db.Query(ctx, getBoardsByUser, createdBy)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Board
+	for rows.Next() {
+		var i Board
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCardByID = `-- name: GetCardByID :one
+SELECT id, title, description, list_id, position, created_at, updated_at FROM cards
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetCardByID(ctx context.Context, id int32) (Card, error) {
+	row := q.db.QueryRow(ctx, getCardByID, id)
+	var i Card
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.ListID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getCardsByList = `-- name: GetCardsByList :many
+SELECT id, title, description, list_id, position, created_at, updated_at FROM cards
+WHERE list_id = $1
+ORDER BY position ASC
+`
+
+func (q *Queries) GetCardsByList(ctx context.Context, listID int32) ([]Card, error) {
+	rows, err := q.db.Query(ctx, getCardsByList, listID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Card
+	for rows.Next() {
+		var i Card
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.ListID,
+			&i.Position,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getListByID = `-- name: GetListByID :one
+SELECT id, name, board_id, position, created_at, updated_at FROM lists
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetListByID(ctx context.Context, id int32) (List, error) {
+	row := q.db.QueryRow(ctx, getListByID, id)
+	var i List
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.BoardID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getListsByBoard = `-- name: GetListsByBoard :many
+SELECT id, name, board_id, position, created_at, updated_at FROM lists
+WHERE board_id = $1
+ORDER BY position ASC
+`
+
+func (q *Queries) GetListsByBoard(ctx context.Context, boardID int32) ([]List, error) {
+	rows, err := q.db.Query(ctx, getListsByBoard, boardID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []List
+	for rows.Next() {
+		var i List
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.BoardID,
+			&i.Position,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
@@ -71,6 +374,116 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 		&i.Email,
 		&i.HashedPassword,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const moveCard = `-- name: MoveCard :one
+UPDATE cards
+SET list_id = $1, position = $2, updated_at = NOW()
+WHERE id = $3
+RETURNING id, title, description, list_id, position, created_at, updated_at
+`
+
+type MoveCardParams struct {
+	ListID   int32
+	Position int32
+	ID       int32
+}
+
+func (q *Queries) MoveCard(ctx context.Context, arg MoveCardParams) (Card, error) {
+	row := q.db.QueryRow(ctx, moveCard, arg.ListID, arg.Position, arg.ID)
+	var i Card
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.ListID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateBoard = `-- name: UpdateBoard :one
+UPDATE boards
+SET name = $1, description = $2, updated_at = NOW()
+WHERE id = $3
+RETURNING id, name, description, created_by, created_at, updated_at
+`
+
+type UpdateBoardParams struct {
+	Name        string
+	Description pgtype.Text
+	ID          int32
+}
+
+func (q *Queries) UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error) {
+	row := q.db.QueryRow(ctx, updateBoard, arg.Name, arg.Description, arg.ID)
+	var i Board
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateCard = `-- name: UpdateCard :one
+UPDATE cards
+SET title = $1, description = $2, updated_at = NOW()
+WHERE id = $3
+RETURNING id, title, description, list_id, position, created_at, updated_at
+`
+
+type UpdateCardParams struct {
+	Title       string
+	Description pgtype.Text
+	ID          int32
+}
+
+func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, error) {
+	row := q.db.QueryRow(ctx, updateCard, arg.Title, arg.Description, arg.ID)
+	var i Card
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.ListID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateList = `-- name: UpdateList :one
+UPDATE lists
+SET name = $1, position = $2, updated_at = NOW()
+where id = $3
+RETURNING id, name, board_id, position, created_at, updated_at
+`
+
+type UpdateListParams struct {
+	Name     string
+	Position int32
+	ID       int32
+}
+
+func (q *Queries) UpdateList(ctx context.Context, arg UpdateListParams) (List, error) {
+	row := q.db.QueryRow(ctx, updateList, arg.Name, arg.Position, arg.ID)
+	var i List
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.BoardID,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

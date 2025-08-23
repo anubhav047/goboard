@@ -8,6 +8,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Board struct {
+	ID          int32
+	Name        string
+	Description pgtype.Text
+	CreatedBy   int32
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type Card struct {
+	ID          int32
+	Title       string
+	Description pgtype.Text
+	ListID      int32
+	Position    int32
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type List struct {
+	ID        int32
+	Name      string
+	BoardID   int32
+	Position  int32
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type Session struct {
 	Token  string
 	Data   []byte
