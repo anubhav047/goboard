@@ -1,3 +1,4 @@
 .env
 context.html
 cookie.txt
+frontend/node_modules
