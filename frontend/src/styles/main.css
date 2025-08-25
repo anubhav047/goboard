@@ -201,3 +201,50 @@ body {
   font-size: 0.85rem;
   line-height: 1.4;
 }
+
+.cards-container {
+  min-height: 100px;
+  padding: 0.5rem 0;
+  transition: background-color 0.2s ease;
+}
+
+/* Drag and Drop Styles */
+.card-item.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  z-index: 1000;
+}
+
+.cards-container.drag-over {
+  background-color: #1a1a1a;
+  border: 2px dashed #ffffff;
+  border-radius: 4px;
+}
+
+.list.drag-over {
+  background-color: #0a0a0a;
+}
+
+.card-item {
+  transition: all 0.2s ease;
+  cursor: grab;
+}
+
+.card-item:active {
+  cursor: grabbing;
+}
+
+.card-item.drag-placeholder {
+  opacity: 0.3;
+  background-color: #1a1a1a;
+  border: 2px dashed #666;
+  color: transparent;
+}
+
+.card-item.drag-over-top {
+  border-top: 3px solid #ffffff;
+}
+
+.card-item.drag-over-bottom {
+  border-bottom: 3px solid #ffffff;
+}

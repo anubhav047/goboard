@@ -48,6 +48,11 @@ func (s *Service) GetListCards(ctx context.Context, listID int32) ([]db.Card, er
 		return nil, fmt.Errorf("failed to get list cards: %w", err)
 	}
 
+	// Ensure we return an empty slice instead of nil
+	if cards == nil {
+		return []db.Card{}, nil
+	}
+
 	return cards, nil
 }
 

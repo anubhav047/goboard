@@ -46,6 +46,11 @@ func (s *Service) GetBoardLists(ctx context.Context, boardID int32) ([]db.List, 
 		return nil, fmt.Errorf("failed tp get board lists: %w", err)
 	}
 
+	// Ensure we return an empty slice instead of nil
+	if lists == nil {
+		return []db.List{}, nil
+	}
+
 	return lists, nil
 }
 

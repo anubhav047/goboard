@@ -47,6 +47,11 @@ func (s *Service) GetUserBoards(ctx context.Context, userID int32) ([]db.Board, 
 		return nil, fmt.Errorf("failed to fet user boards; %w", err)
 	}
 
+	// Ensure we return an empty slice instead of nil
+	if boards == nil {
+		return []db.Board{}, nil
+	}
+
 	return boards, nil
 }
 
